@@ -43,15 +43,10 @@ extern "C" void app_main()
     LinkSpi link = std::move(std::get<0>(linkRes));
     auto pixy = Pixy2<LinkSpi>(std::move(link));
 
-    // pixy2::VersionResponse ver;
-    // ESP_ERROR_CHECK(pixy.waitForStartup( *ver, pdMS_TO_TICKS(1000)));
     ESP_ERROR_CHECK(pixy.waitForStartup());
-    // GetBlocksContext blocksCtx;
-    GetBlocksContext blocksCtxRed, blocksCtxBlue;
+    GetBlocksContext blocksCtx;
     while(true) {
-        //auto err = pixy.getColorBlocks(1, 4, blocksCtx); // cervena
-        auto err = pixy.getColorBlocks(1, 4, blocksCtxRed); // cervena
-        auto err2 = pixy.getColorBlocks(2, 4, blocksCtxBlue); // modra
+        auto err = pixy.getColorBlocks(1|2, 4, blocksCtx); // cervena|modra    // kontroluje, jestli je pixy2 busy pouze jednou
         if(err == pixy.ERR_PIXY_BUSY) {
             vTaskDelay(1);
             continue;
@@ -60,46 +55,23 @@ extern "C" void app_main()
             vTaskDelay(pdMS_TO_TICKS(500));
             continue;
         }
-        if(err2 == pixy.ERR_PIXY_BUSY) {
-            vTaskDelay(1);
-            continue;
-        } else if(err2 != ESP_OK) {
-            printf("Error2: %d\n", err);
-            vTaskDelay(pdMS_TO_TICKS(500));
-            continue;
-        }
 
-        // const uint8_t lorrisHeader[] = { 0xFF, 0x01, (uint8_t)(blocksCtx.blocks.size() * sizeof(ColorBlock)) };
-        // uart_write_bytes(UART_NUM_0, lorrisHeader, sizeof(lorrisHeader));
-        // if(blocksCtx.blocks.size() > 0) {
-        //     uart_write_bytes(UART_NUM_0, blocksCtx.blocks.data(), sizeof(ColorBlock)*blocksCtx.blocks.size());
-        // }
-
-        const uint8_t lorrisHeader[] = { 0xFF, 0x01, (uint8_t)(blocksCtxRed.blocks.size() * sizeof(ColorBlock)) };
+        const uint8_t lorrisHeader[] = { 0xFF, 0x01, (uint8_t)(blocksCtx.blocks.size() * sizeof(ColorBlock)) };
         uart_write_bytes(UART_NUM_0, lorrisHeader, sizeof(lorrisHeader));
-        if(blocksCtxRed.blocks.size() > 0) {
-            uart_write_bytes(UART_NUM_0, blocksCtxRed.blocks.data(), sizeof(ColorBlock)*blocksCtxRed.blocks.size());
+        if(blocksCtx.blocks.size() > 0) {
+            uart_write_bytes(UART_NUM_0, blocksCtx.blocks.data(), sizeof(ColorBlock)*blocksCtx.blocks.size());
         }
-        if(blocksCtxBlue.blocks.size() > 0) {
-            uart_write_bytes(UART_NUM_0, blocksCtxBlue.blocks.data(), sizeof(ColorBlock)*blocksCtxBlue.blocks.size());
-        }
-
-
-        // int poziceX = blocksCtxRed.blocks[0]->x;
-        // int poziceY = blocksCtxRed.blocks[0]->y;
-        // int poziceX2 = blocksCtxBlue.blocks[1]->x;
-        // int poziceY2 = blocksCtxBlue.blocks[1]->y;
 
         // int poziceX = blocksCtx.blocks[0]->x;
         // int poziceY = blocksCtx.blocks[0]->y;
         // int poziceX2 = blocksCtx.blocks[1]->x;
         // int poziceY2 = blocksCtx.blocks[1]->y;
 
-        // int i;
-        // for(i =0; i<6; i++)
         //    printf("i: %i, %i, %i, %i\n", poziceX, poziceY, poziceX2, poziceY2);
         // vTaskDelay(pdMS_TO_TICKS(1000));
 
     } 
 }
+
+
 
